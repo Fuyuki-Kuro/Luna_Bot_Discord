@@ -1,0 +1,87 @@
+Ferro	IV	0
+III	100
+II	200
+I	300
+Bronze	IV	400
+III	500
+II	600
+I	700
+Prata	IV	800
+III	900
+II	1000
+I	1100
+Ouro	IV	1200
+III	1300
+II	1400
+I	1500
+Platina	IV	1600
+III	1700
+II	1800
+I	1900
+Esmeralda	Pontos	2000+ (Sem divisões, apenas PC. Ex: Top 100 da Esmeralda)
+Diamante	Pontos	2500+ (Sem divisões, apenas PC. Ex: Top 50 da Esmeralda)
+Mestre	Pontos	3000+ (Sem divisões, apenas PC. Ex: Top 20 de Diamante)
+Grão-Mestre	Pontos	3500+ (Sem divisões, apenas PC. Ex: Top 10 do servidor)
+Desafiante	Pontos	4000+ (A elite. Ex: Top 1 do servidor)
+
+
+
+
+Distribuição Justa de Pontos de Classificação (PC)
+Para distribuir pontos de forma justa, especialmente em um sistema que envolve tanto o desempenho da equipe quanto o individual, precisamos considerar alguns princípios:
+
+Diferença de Nível: Ganhar de um time/jogador de elo superior deve dar mais pontos do que ganhar de um de elo inferior. Perder para um de elo inferior deve custar mais pontos.
+Impacto do Evento: Torneios são mais importantes que treinos. Vencer um torneio deve dar muito mais pontos do que vencer um treino.
+Participação: Recompensar a participação, mas de forma escalonada.
+Consistência: Equipes/jogadores que jogam mais e mantêm bom desempenho devem ter seus elos mais estáveis.
+Aqui estão algumas abordagens práticas, começando pela mais simples e evoluindo para a mais complexa:
+
+1. Sistema de Pontos Fixos (Com Multiplicadores para Eventos)
+Essa é a mais fácil de implementar e boa para começar.
+
+PC por Ação:
+
+Vitória em Treino (Equipe): +10 PC
+Derrota em Treino (Equipe): -5 PC
+Vitória em Torneio (Equipe): +50 PC (Ex: fase de grupos/oitavas)
+Derrota em Torneio (Equipe): -10 PC
+Semifinal Torneio (Equipe): +75 PC (se vencer) / -15 PC (se perder)
+Final Torneio (Equipe): +100 PC (se vencer) / -20 PC (se perder)
+Campeão de Torneio (Equipe): +150 PC Adicional (Totalizando, por exemplo, 250 PC pela final e +150 = 400 PC)
+Impacto Individual em Jogos de Equipe:
+
+Jogador Participante em Treino Vencedor: +5 PC
+Jogador Participante em Treino Perdedor: -2 PC
+Jogador Participante em Torneio Vencedor (Fase Inicial): +20 PC
+Jogador Participante em Torneio Perdedor (Fase Inicial): -5 PC
+Jogador Campeão de Torneio (Equipe): +50 PC Adicional
+Pontos por Torneio 1x1:
+
+Vitória 1v1: +25 PC
+Derrota 1v1: -10 PC
+Vencedor Torneio 1v1: +100 PC Adicional
+Vantagem: Fácil de entender e implementar.
+Desvantagem: Não considera a diferença de elo entre os oponentes, o que pode parecer "injusto" se um time Diamante ganha de um Ferro e recebe os mesmos pontos de quando ganha de um Ouro.
+
+2. Pontos Fixos com Ajuste por Diferença de Elo (Mais Justo)
+Essa abordagem é um passo intermediário que adiciona mais justiça sem a complexidade total do Glicko-2. Você usaria os pontos base do método 1, mas aplicaria um multiplicador (ou ajuste) baseado na diferença de elo.
+
+Princípio:
+
+Vencer um Oponente de Elo Superior: Multiplicador > 1.0 (Ex: 1.2x, 1.5x)
+Vencer um Oponente de Elo Similar: Multiplicador = 1.0x
+Vencer um Oponente de Elo Inferior: Multiplicador < 1.0 (Ex: 0.8x, 0.5x)
+Perder para Oponente de Elo Superior: Multiplicador < 1.0 (menos perda)
+Perder para Oponente de Elo Inferior: Multiplicador > 1.0 (mais perda)
+Como Calcular a Diferença de Elo:
+
+Converta Elos/Divisões para um Valor Numérico: Crie um mapeamento. Ex: Ferro IV = 0, Ferro III = 1, ..., Platina I = 19, Esmeralda = 20, Diamante = 21, etc. Você pode usar o "piso" de PC que definimos para cada elo como seu valor numérico. Ex: elo_to_number = {"Ferro IV": 0, "Ferro III": 100, ..., "Ouro I": 1500, "Esmeralda": 2000, ...}
+Calcule a Diferença: diferenca_elo = meu_elo_numerico - elo_oponente_numerico
+Tabela de Ajuste de Multiplicador (Exemplo):
+
+Diferença de Elo (Meu Elo - Oponente Elo)	Multiplicador de Ganho	Multiplicador de Perda
+Muito Superior (> 500 PC)	0.5x	0.8x
+Superior (200-500 PC)	0.8x	0.9x
+Similar (-199 a 199 PC)	1.0x	1.0x
+Inferior (-200 a -500 PC)	1.2x	1.2x
+Muito Inferior (< -500 PC)	1.5x	1.5x
