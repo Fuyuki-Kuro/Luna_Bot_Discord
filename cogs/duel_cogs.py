@@ -68,22 +68,16 @@ class DuelCog(commands.Cog):
 
     @commands.Cog.listener("on_interaction")
     async def on_duel_interaction(self, interaction: discord.Interaction):
-        if interaction.type != discord.InteractionType.component or not interaction.data.get("custom_id"):
-            return
+        if interaction.type != discord.InteractionType.component or not interaction.data.get("custom_id"): return
         custom_id = interaction.data["custom_id"]
-        if not custom_id.startswith("duel_"):
-            return
+        if not custom_id.startswith("duel_"): return
         try:
             _, action, duel_id = custom_id.split("_", 2)
         except ValueError:
             return logger.error(f"custom_id malformado recebido: {custom_id}")
-        
-        if action == "accept":
-            await self.handle_duel_accept(interaction, duel_id)
-        elif action == "decline":
-            await self.handle_duel_decline(interaction, duel_id)
-        elif action == "report":
-            await self.handle_report_winner(interaction, duel_id)
+        if action == "accept": await self.handle_duel_accept(interaction, duel_id)
+        elif action == "decline": await self.handle_duel_decline(interaction, duel_id)
+        elif action == "report": await self.handle_report_winner(interaction, duel_id)
 
     async def handle_duel_accept(self, interaction: discord.Interaction, duel_id: str):
         duel = await self.duel_service.get_duel_by_id(duel_id)
@@ -92,8 +86,7 @@ class DuelCog(commands.Cog):
         await interaction.message.delete()
         await interaction.response.send_message(f"✅ Duelo aceito! Criando um canal privado...", ephemeral=True)
         guild = self.bot.get_guild(SERVER_ID)
-        if not guild:
-            return logger.error(f"Erro crítico: Servidor com ID {SERVER_ID} não encontrado.")
+        if not guild: return logger.error(f"Erro crítico: Servidor com ID {SERVER_ID} não encontrado.")
         challenger = guild.get_member(duel['challenger_id'])
         opponent = guild.get_member(duel['opponent_id'])
         if not challenger or not opponent:
@@ -123,6 +116,20 @@ class DuelCog(commands.Cog):
     async def handle_report_winner(self, interaction: discord.Interaction, duel_id: str):
         await interaction.response.defer()
         duel = await self.duel_service.get_duel_by_id(duel_id)
+
+        if accepted_at := duel.get('accepted_at'):
+            time_elapsed = time.time() - accepted_at
+            cooldown = 900  # 15 minutos
+            if time_elapsed < cooldown:
+                time_remaining = cooldown - time_elapsed
+                minutes_left = int(time_remaining // 60)
+                seconds_left = int(time_remaining % 60)
+                return await interaction.followup.send(
+                    f"⏳ Por favor, aguarde. O resultado só pode ser declarado após 15 minutos do início do duelo.\n"
+                    f"Tempo restante: **{minutes_left} minuto(s) e {seconds_left} segundo(s)**.",
+                    ephemeral=True
+                )
+        
         if not duel or interaction.user.id not in [duel['challenger_id'], duel['opponent_id']] or duel['status'] != 'in_progress':
             return await interaction.followup.send("❌ Você não pode reportar o resultado deste duelo.", ephemeral=True)
         
@@ -136,31 +143,15 @@ class DuelCog(commands.Cog):
         K_FACTOR_NEW_PLAYER, K_FACTOR_ESTABLISHED = 40, 24
         winner_games_played = len(winner_data.get('individual_match_history', []))
         loser_games_played = len(loser_data.get('individual_match_history', []))
-        
         winner_k = K_FACTOR_NEW_PLAYER if winner_games_played < 20 else K_FACTOR_ESTABLISHED
         loser_k = K_FACTOR_NEW_PLAYER if loser_games_played < 20 else K_FACTOR_ESTABLISHED
         
-        logger.info(f"Cálculo de ELO para {winner_data['username']} (K={winner_k}) vs {loser_data['username']} (K={loser_k})")
-        
         winner_points_change, loser_points_change = calculate_elo(winner_elo_before, loser_elo_before, winner_k, loser_k)
         
-        winner_result = await self.player_service.update_player_after_duel(
-            player_id=winner_id, 
-            result="win",
-            points_change=winner_points_change, 
-            opponent_id=loser_id, 
-            opponent_elo_before_match=loser_elo_before
-        )
-        await self.player_service.update_player_after_duel(
-            player_id=loser_id, 
-            result="loss",
-            points_change=loser_points_change, 
-            opponent_id=winner_id, 
-            opponent_elo_before_match=winner_elo_before
-        )
+        winner_result = await self.player_service.update_player_after_duel(winner_id, "win", winner_points_change, loser_id, loser_elo_before)
+        await self.player_service.update_player_after_duel(loser_id, "loss", loser_points_change, winner_id, winner_elo_before)
         
         final_winner_points_gain = winner_result.get("points", 0)
-        
         updated_duel = await self.duel_service.update_duel(duel_id, {"status": "completed", "winner_id": winner_id, "loser_id": loser_id, "points_change": final_winner_points_gain, "completed_at": time.time()})
         
         guild = self.bot.get_guild(SERVER_ID)
