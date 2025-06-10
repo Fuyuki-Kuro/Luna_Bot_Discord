@@ -8,7 +8,7 @@ import asyncio
 
 from database.player_service import PlayerService
 from database.connection import get_db
-from ui.registration_ui import RegistrationView 
+from ui.registration_ui import RegistrationView, RegistrationModal
 from ui.player_card_ui import PlayerCardView
 
 logger = logging.getLogger(__name__)
@@ -90,6 +90,21 @@ class RegistrationCog(commands.Cog):
                         logger.error(f"Falha ao expulsar {member.display_name}: {e}")
                 else:
                     await self.send_registration_dm(member)
+
+    @app_commands.command(name="editar_registro", description="Edita suas informações de registro na Arena.")
+    async def edit_registration(self, interaction: discord.Interaction):
+        """Abre o formulário de registro com os dados atuais do usuário para edição."""
+        
+        player_data = await self.player_service.get_player_by_id(interaction.user.id)
+        
+        if not player_data or not player_data.get('is_registered'):
+            return await interaction.response.send_message(
+                "❌ Você precisa se registrar primeiro! Use o botão em uma mensagem de registro.", 
+                ephemeral=True
+            )
+            
+        # Abre o modal, passando os dados existentes para pré-preencher os campos
+        await interaction.response.send_modal(RegistrationModal(existing_data=player_data))
 
     async def send_registration_dm(self, member: discord.Member):
         player_data = await self.player_service.get_player_by_id(member.id)

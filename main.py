@@ -11,8 +11,8 @@ logger = logging.getLogger('discord')
 
 # Carrega as ariáveis de ambiente do arquivo .env
 load_dotenv()
-DISCORD_BOT_TOKEN = os.getenv('ARES')
-MONGO_URI=str(os.getenv('MONGO_URI'))
+DISCORD_BOT_TOKEN = os.getenv('BOT_DICORD_TOKEN')
+MONGO_URI=str(os.getenv('MONGO_URI_NEW'))
 BOT_PREFIX=os.getenv('BOT_PREFIX')
 
 # importa a função de conexão do banco de dados
@@ -116,5 +116,4 @@ async def main():
     await bot.start(DISCORD_BOT_TOKEN)
 
 if __name__ == '__main__':
-    
     asyncio.run(main())

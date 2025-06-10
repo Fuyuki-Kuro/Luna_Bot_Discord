@@ -69,3 +69,53 @@ async def create_duel_result_embed(winner: discord.Member, loser: discord.Member
     embed.set_footer(text=f"ID do Duelo: {duel_data['_id']}")
     
     return embed
+
+async def create_profile_embed(member: discord.Member, player_data: Dict[str, Any]) -> discord.Embed:
+    """Cria e retorna um embed com o perfil detalhado de um jogador."""
+    
+    # --- Cálculos de Estatísticas ---
+    match_history = player_data.get('individual_match_history', [])
+    wins = sum(1 for match in match_history if match.get('points_change', 0) > 0)
+    losses = len(match_history) - wins
+    win_rate = (wins / len(match_history) * 100) if match_history else 0
+    win_streak = player_data.get('win_streak', 0)
+    
+    # --- Montagem do Embed ---
+    player_elo_str = player_data.get('individual_current_elo', 'N/A')
+    elo_emoji = ELO_EMOJI_MAP.get(player_elo_str, "⚫")
+    
+    embed = discord.Embed(
+        title=f"Perfil de {member.display_name}",
+        color=member.accent_color or discord.Color.blurple()
+    )
+    
+    if member.display_avatar:
+        embed.set_thumbnail(url=member.display_avatar.url)
+
+    embed.add_field(
+        name="Rank",
+        value=f"{elo_emoji} **{player_elo_str} {player_data.get('individual_current_division', '')}**\n`{player_data.get('individual_elo_points', 0)}` Pontos",
+        inline=True
+    )
+    embed.add_field(
+        name="Estatísticas de Duelo",
+        value=f"Vitórias: `{wins}`\nDerrotas: `{losses}`\nTaxa de Vitória: `{win_rate:.1f}%`",
+        inline=True
+    )
+    embed.add_field(
+        name="Sequência Atual",
+        value=f"`{win_streak}` vitórias consecutivas 🔥" if win_streak > 1 else "`Nenhuma`",
+        inline=True
+    )
+    
+    embed.add_field(name="Nick no Jogo", value=f"`{player_data.get('wr_nickname', 'Não informado')}`", inline=True)
+    embed.add_field(name="Região", value=player_data.get('wr_region', 'N/A'), inline=True)
+    
+    roles_list = player_data.get('preferred_roles', [])
+    roles_str = ', '.join(roles_list) if roles_list else "Não informado"
+    embed.add_field(name="Rotas Preferidas", value=roles_str, inline=True)
+
+    registered_at_ts = player_data['created_at']
+    embed.set_footer(text=f"Membro desde {discord.utils.format_dt(datetime.datetime.fromtimestamp(registered_at_ts), style='D')}")
+
+    return embed

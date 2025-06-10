@@ -62,7 +62,10 @@ class DuelMatchData(TypedDict):
     challenger_id: int
     opponent_id: int
     
+    screenshot_url: Optional[str]
+    duel_type: str
     status: str  # "pending", "in_progress", "completed", "cancelled"
+    reported_winner_id: Optional[int]
     
     # Será preenchido quando o duelo terminar
     winner_id: Optional[int]

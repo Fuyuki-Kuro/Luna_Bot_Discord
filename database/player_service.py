@@ -141,3 +141,16 @@ class PlayerService:
     async def delete_player(self, member_id: int):
         """Deleta um jogador do banco de dados."""
         await self.collection.delete_one({"_id": member_id})
+
+    async def get_leaderboard_players(self, limit: int = 10) -> List[PlayerData]:
+        """
+        Busca os jogadores com o maior ELO no banco de dados.
+        """
+        # Filtra para pegar apenas jogadores registrados
+        query = {"is_registered": True}
+        
+        # .sort("individual_elo_points", -1) ordena do maior para o menor
+        # .limit(10) pega apenas os 10 primeiros resultados
+        cursor = self.collection.find(query).sort("individual_elo_points", -1).limit(limit)
+        
+        return await cursor.to_list(length=limit)

@@ -11,6 +11,8 @@ class DuelService:
     async def create_duel(self, challenger_id: int, opponent_id: int, challenger_elo: int, opponent_elo: int) -> DuelMatchData:
         duel_doc: DuelMatchData = {
             "challenger_id": challenger_id, "opponent_id": opponent_id, "status": "pending",
+            "reported_winner_id": None,
+            'duel_type': '1v1',
             "winner_id": None, "loser_id": None, "challenger_elo_at_match": challenger_elo,
             "opponent_elo_at_match": opponent_elo, "points_change": None, "channel_id": None,
             "created_at": time.time(), "accepted_at": None, "completed_at": None
